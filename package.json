@@ -6,8 +6,11 @@
     "start": "node app"
   },
   "dependencies": {
+    "aws-sdk": "^2.0.4",
     "express": "~3.3.4",
-    "jade": "~0.34.0"
+    "jade": "~0.34.0",
+    "request": "^2.37.0",
+    "underscore": "^1.6.0"
   },
   "devDependencies": {
     "grunt": "~0.4.1",
