@@ -10,7 +10,8 @@ var express = require('express')
   , AWS = require('aws-sdk')
   , path = require('path')
   , _ = require('underscore')
-  , request = require('request');
+  , request = require('request')
+  , async = require('async');
 
 var app = express();
 
@@ -46,12 +47,12 @@ app.all('*', function(req, res, next) {
 });
 
 app.get('/', routes.index);
-app.get('/users', user.list);
+
 app.get('/import', function(req,res){
   console.log('importing');
   var count = 0;
   for(var i=0;i<1355844/50;i++){
-    if(i*50 > 10000)break;
+    if(i*50 > 100)break;
     request('http://api.shopstyle.com/api/v2/products?pid=uid1444-23870038-13&offset='+ i*50 +'&limit=50&', function (error, response, body) {
       if (!error && response.statusCode == 200) {
         var dict =JSON.parse(body);
@@ -138,6 +139,30 @@ app.get('/import', function(req,res){
   }
 });
 
+app.get('/cats',function(req,res){
+  request('http://api.shopstyle.com/api/v2/categories?pid=uid1444-23870038-13&', function (error, response, body) {
+    var dict = JSON.parse(body);
+    var tree = {name:'shopstyle',children:[]};
+    var all = [];
+    _.each(dict.categories, function(category){
+      var pair = {name:category.id, parent:category.parentId, children:[]};
+      tree.children.push(pair);
+      all.push(pair);
+    });
+    for(var i=0;i<all.length;i++){
+      var v = all[i];
+      for(var j=0;j<all.length;j++){
+        var u = all[j];
+        if(u.parent === v.name){
+          v.children.push(u);
+          tree.children.splice(j,1);
+        }
+      }
+    }
+    res.json(tree);
+  });
+});
+
 app.get('/scan', function(req,res){
   var params = {
     TableName: 'items', // required
@@ -148,6 +173,139 @@ app.get('/scan', function(req,res){
     if (err) console.log(err, err.stack); // an error occurred
     else res.json(data);           // successful response
   });
+});
+
+app.get('/itemsCount',function(req,res){
+  var count = 0;
+  var params = {
+    TableName: 'items', // required
+    AttributesToGet:['id']
+  };
+
+  async.whilst(
+      function () { return true; },
+      function (callback) {
+        dynamodb.scan(params, function(err, data) {
+          if (err){
+            console.log(err, err.stack);
+            callback(err);
+          }else{
+            console.log(data.ScannedCount);
+            params.ExclusiveStartKey = data.LastEvaluatedKey;
+            _.each(data.Items, function(item){
+              var params = {
+                Key: item,
+                TableName: 'items',
+              };
+              dynamodb.deleteItem(params, function(err, data) {
+                if(err)console.log(err);
+              });
+            });
+            callback();
+          }
+        });
+      },
+      function (err) {}
+  );
+});
+
+app.get('/itemsDelete',function(req,res){
+  var count = -1;
+  var sum = 0;
+  var params = {
+    TableName: 'items',
+    AttributesToGet: ['id']
+  };
+
+  async.whilst(
+      function () { return count !==0; },
+      function (callback) {
+        dynamodb.scan(params, function(err, data) {
+          if (err){
+            console.log(err, err.stack);
+            callback(err);
+          }else{
+            console.log(data);
+            count = data.Count;
+            sum += count;
+            params.ExclusiveStartKey = data.LastEvaluatedKey;
+            _.each(data.Items, function(item){
+              var params = {
+                Key: item,
+                TableName: 'items',
+              };
+              dynamodb.deleteItem(params, function(err, data) {
+                if(err)console.log(err);
+              });
+            });
+            callback();
+          }
+        });
+      },
+      function (err) {
+        res.send(count + ' items deleted');
+      }
+  );
+});
+
+app.get('/users/:id',function(req,res){
+  res.send(req.params.id);
+});
+
+app.get('/users',function(req,res){
+  res.send('all users');
+});
+
+app.put('/users/:id',function(req,res){
+  res.send('update user' + req.params.id);
+});
+
+app.post('/users',function(req,res){
+  res.send('create user');
+});
+
+app.delete('/users/:id',function(req,res){
+  res.send('delete user' + req.params.id);
+});
+
+app.get('/items/:id',function(req,res){
+  res.send('get item' + req.params.id);
+});
+
+app.get('/items',function(req,res){
+  res.send('get items');
+});
+
+app.put('/items/:id',function(req,res){
+  res.send('update item');
+});
+
+app.post('/items',function(req,res){
+  res.send('create item');
+});
+
+app.delete('/items/:id',function(req,res){
+  res.send('delete item' + req.params.id);
+});
+
+app.get('/lists/:id',function(req,res){
+  res.send('get list' + req.params.id);
+});
+
+app.get('/lists/:id',function(req,res){
+  res.send('get lists');
+});
+
+app.put('/lists',function(req,res){
+  res.send('update list');
+});
+
+app.post('/list',function(req,res){
+  res.send('create list');
+});
+
+app.delete('/list',function(req,res){
+  res.send('delete list');
 });
 
 http.createServer(app).listen(app.get('port'), function(){
