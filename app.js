@@ -212,60 +212,76 @@ app.get('/itemsCount',function(req,res){
 app.get('/itemsDelete',function(req,res){
   var count = -1;
   var sum = 0;
-  var params = {
-    TableName: 'items',
-    AttributesToGet: ['id']
-  };
-
+  var params = { TableName: 'items', AttributesToGet: ['id']};
   async.whilst(
-      function () { return count !==0; },
-      function (callback) {
-        dynamodb.scan(params, function(err, data) {
-          if (err){
-            console.log(err, err.stack);
-            callback(err);
-          }else{
-            console.log(data);
-            count = data.Count;
-            sum += count;
-            params.ExclusiveStartKey = data.LastEvaluatedKey;
-            _.each(data.Items, function(item){
-              var params = {
-                Key: item,
-                TableName: 'items',
-              };
-              dynamodb.deleteItem(params, function(err, data) {
-                if(err)console.log(err);
-              });
+    function () { return count !==0; },
+    function (callback) {
+      dynamodb.scan(params, function(err, data) {
+        if (err){
+          console.log(err, err.stack);
+          callback(err);
+        }else{
+          console.log(data);
+          count = data.Count;
+          sum += count;
+          params.ExclusiveStartKey = data.LastEvaluatedKey;
+          _.each(data.Items, function(item){
+            var params = {
+              Key: item,
+              TableName: 'items',
+            };
+            dynamodb.deleteItem(params, function(err, data) {
+              if(err)console.log(err);
             });
-            callback();
-          }
-        });
-      },
-      function (err) {
-        res.send(count + ' items deleted');
-      }
+          });
+          callback();
+        }
+      });
+    },
+    function (err) {
+      res.send(count + ' items deleted');
+    }
   );
 });
 
 app.get('/users/:id',function(req,res){
-  res.send(req.params.id);
+  var params = {Key:{id:{S:req.params.id}},TableName:'users',AttributesToGet:['id']};
+  dynamodb.getItem(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
 });
 
 app.get('/users',function(req,res){
-  res.send('all users');
+  var params = {TableName:'users',AttributesToGet:['id']};
+  dynamodb.scan(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
 });
 
-app.put('/users/:id',function(req,res){
-  res.send('update user' + req.params.id);
+app.put('/users',function(req,res){
+  var params = {Item:req.body,TableName:'users'};
+  dynamodb.putItem(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
 });
 
-app.post('/users',function(req,res){
-  res.send('create user');
+app.post('/users/:id',function(req,res){
+  var params = {Key:{id,req.params.id},TableName:'users',AttributeUpdates:req.body};
+  dynamodb.putItem(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
 });
 
 app.delete('/users/:id',function(req,res){
-  res.send('delete user' + req.params.id);
+  var params = {Key:{id:req.params.id,TableName:'users'}};
+  dynamodb.deleteItem(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
 });
 
 app.get('/items/:id',function(req,res){
