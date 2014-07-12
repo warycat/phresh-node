@@ -244,8 +244,16 @@ app.get('/itemsDelete',function(req,res){
   );
 });
 
+app.put('/users',function(req,res){
+  var params = {Item:req.body,TableName:'users'};
+  dynamodb.putItem(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
+});
+
 app.get('/users/:id',function(req,res){
-  var params = {Key:{id:{S:req.params.id}},TableName:'users',AttributesToGet:['id']};
+  var params = {Key:{id:{S:req.params.id}},TableName:'users'};
   dynamodb.getItem(params,function(err,data){
     if(err)res.json(err);
     else res.json(data);
@@ -260,68 +268,104 @@ app.get('/users',function(req,res){
   });
 });
 
-app.put('/users',function(req,res){
-  var params = {Item:req.body,TableName:'users'};
-  dynamodb.putItem(params,function(err,data){
-    if(err)res.json(err);
-    else res.json(data);
-  });
-});
-
 app.post('/users/:id',function(req,res){
-  var params = {Key:{id,req.params.id},TableName:'users',AttributeUpdates:req.body};
-  dynamodb.putItem(params,function(err,data){
+  var params = {Key:{id:{S:req.params.id}},TableName:'users',AttributeUpdates:req.body};
+  console.log(params);
+  dynamodb.updateItem(params,function(err,data){
     if(err)res.json(err);
     else res.json(data);
   });
 });
 
 app.delete('/users/:id',function(req,res){
-  var params = {Key:{id:req.params.id,TableName:'users'}};
+  var params = {Key:{id:{S:req.params.id}},TableName:'users'};
   dynamodb.deleteItem(params,function(err,data){
     if(err)res.json(err);
     else res.json(data);
   });
 });
 
+app.put('/items',function(req,res){
+  var params = {Item:req.body,TableName:'items'};
+  dynamodb.putItem(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
+});
+
 app.get('/items/:id',function(req,res){
-  res.send('get item' + req.params.id);
+  var params = {Key:{id:{S:req.params.id}},TableName:'items'};
+  console.log(params);
+  dynamodb.getItem(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
 });
 
 app.get('/items',function(req,res){
-  res.send('get items');
+  var params = {TableName:'items',AttributesToGet:['id']};
+  dynamodb.scan(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
 });
 
-app.put('/items/:id',function(req,res){
-  res.send('update item');
-});
-
-app.post('/items',function(req,res){
-  res.send('create item');
+app.post('/items/:id',function(req,res){
+  var params = {Key:{id:{S:req.params.id}},TableName:'items',AttributeUpdates:req.body};
+  console.log(params);
+  dynamodb.updateItem(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
 });
 
 app.delete('/items/:id',function(req,res){
-  res.send('delete item' + req.params.id);
-});
-
-app.get('/lists/:id',function(req,res){
-  res.send('get list' + req.params.id);
-});
-
-app.get('/lists/:id',function(req,res){
-  res.send('get lists');
+  var params = {Key:{id:{S:req.params.id}},TableName:'items'};
+  dynamodb.deleteItem(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
 });
 
 app.put('/lists',function(req,res){
-  res.send('update list');
+  var params = {Item:req.body,TableName:'lists'};
+  dynamodb.putItem(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
 });
 
-app.post('/list',function(req,res){
-  res.send('create list');
+app.get('/lists/:id',function(req,res){
+  var params = {Key:{id:{S:req.params.id}},TableName:'lists'};
+  dynamodb.getItem(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
 });
 
-app.delete('/list',function(req,res){
-  res.send('delete list');
+app.get('/lists',function(req,res){
+  var params = {TableName:'lists',AttributesToGet:['id']};
+  dynamodb.scan(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
+});
+
+app.post('/lists/:id',function(req,res){
+  var params = {Key:{id:{S:req.params.id}},TableName:'lists',AttributeUpdates:req.body};
+  console.log(params);
+  dynamodb.updateItem(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
+});
+
+app.delete('/lists/:id',function(req,res){
+  var params = {Key:{id:{S:req.params.id}},TableName:'lists'};
+  dynamodb.deleteItem(params,function(err,data){
+    if(err)res.json(err);
+    else res.json(data);
+  });
 });
 
 http.createServer(app).listen(app.get('port'), function(){
