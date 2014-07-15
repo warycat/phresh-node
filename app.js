@@ -48,97 +48,6 @@ app.all('*', function(req, res, next) {
 
 app.get('/', routes.index);
 
-app.get('/import', function(req,res){
-  console.log('importing');
-  var count = 0;
-  for(var i=0;i<1355844/50;i++){
-    if(i*50 > 100)break;
-    request('http://api.shopstyle.com/api/v2/products?pid=uid1444-23870038-13&offset='+ i*50 +'&limit=50&', function (error, response, body) {
-      if (!error && response.statusCode == 200) {
-        var dict =JSON.parse(body);
-        for(var j=0;j<dict.products.length;j++){
-          var p = dict.products[j];
-          if(typeof p.brand != 'undefined' && typeof p.retailer != 'undefined'){
-            console.log(count,p.id, p.brand.name,p.retailer.name);
-            count++;
-            var params = {
-              Item: { // required
-                id: {
-                  S: p.id + '',
-                },
-                name: {
-                  S: p.name
-                },
-                brandedName:{
-                  S: p.brandedName
-                },
-                unbrandedName:{
-                  S: p.unbrandedName
-                },
-                brand:{
-                  S: p.brand.id + ''
-                },
-                description:{
-                  S: p.description
-                },
-                currency:{
-                  S: p.currency
-                },
-                priceLabel:{
-                  S: p.priceLabel
-                },
-                inStock:{
-                  S: p.inStock + ''
-                },
-                retailer:{
-                  S: p.retailer.id + ''
-                },
-                imageMediumURL:{
-                  S: p.image.sizes.Medium.url
-                },
-                imageOriginalURL:{
-                  S: p.image.sizes.Original.url
-                },
-                clickUrl:{
-                  S: p.clickUrl
-                },
-                pageUrl:{
-                  S: p.pageUrl
-                },
-                price:{
-                  N: p.price + ''
-                }
-              },
-              TableName: 'items',
-              ReturnConsumedCapacity: 'TOTAL',
-              ReturnItemCollectionMetrics: 'SIZE',
-            };
-            dynamodb.putItem(params, function(err, data) {
-              if (err) console.log(err, err.stack); // an error occurred
-              // else console.log('put');
-            });
-          }else{
-            var params = {
-              Key: { // required
-                id: {
-                  S: p.id + '',
-                },
-              },
-              TableName: 'items',
-              ReturnConsumedCapacity: 'TOTAL',
-              ReturnItemCollectionMetrics: 'SIZE',
-            };
-            dynamodb.deleteItem(params, function(err, data) {
-              if (err) console.log(err, err.stack); // an error occurred
-              // else     console.log('delete');           // successful response
-            });
-          }
-        }
-      }
-    });
-  }
-});
-
 app.get('/cats',function(req,res){
   request('http://api.shopstyle.com/api/v2/categories?pid=uid1444-23870038-13&', function (error, response, body) {
     var dict = JSON.parse(body);
@@ -163,91 +72,10 @@ app.get('/cats',function(req,res){
   });
 });
 
-app.get('/scan', function(req,res){
-  var params = {
-    TableName: 'items', // required
-    Limit: 100,
-    Select: 'ALL_ATTRIBUTES'
-  };
-  dynamodb.scan(params, function(err, data) {
-    if (err) console.log(err, err.stack); // an error occurred
-    else res.json(data);           // successful response
-  });
-});
-
-app.get('/itemsCount',function(req,res){
-  var count = 0;
-  var params = {
-    TableName: 'items', // required
-    AttributesToGet:['id']
-  };
-
-  async.whilst(
-      function () { return true; },
-      function (callback) {
-        dynamodb.scan(params, function(err, data) {
-          if (err){
-            console.log(err, err.stack);
-            callback(err);
-          }else{
-            console.log(data.ScannedCount);
-            params.ExclusiveStartKey = data.LastEvaluatedKey;
-            _.each(data.Items, function(item){
-              var params = {
-                Key: item,
-                TableName: 'items',
-              };
-              dynamodb.deleteItem(params, function(err, data) {
-                if(err)console.log(err);
-              });
-            });
-            callback();
-          }
-        });
-      },
-      function (err) {}
-  );
-});
-
-app.get('/itemsDelete',function(req,res){
-  var count = -1;
-  var sum = 0;
-  var params = { TableName: 'items', AttributesToGet: ['id']};
-  async.whilst(
-    function () { return count !==0; },
-    function (callback) {
-      dynamodb.scan(params, function(err, data) {
-        if (err){
-          console.log(err, err.stack);
-          callback(err);
-        }else{
-          console.log(data);
-          count = data.Count;
-          sum += count;
-          params.ExclusiveStartKey = data.LastEvaluatedKey;
-          _.each(data.Items, function(item){
-            var params = {
-              Key: item,
-              TableName: 'items',
-            };
-            dynamodb.deleteItem(params, function(err, data) {
-              if(err)console.log(err);
-            });
-          });
-          callback();
-        }
-      });
-    },
-    function (err) {
-      res.send(count + ' items deleted');
-    }
-  );
-});
-
 app.put('/users',function(req,res){
   var params = {Item:req.body,TableName:'users'};
   dynamodb.putItem(params,function(err,data){
-    if(err)res.json(err);
+    if(err)console.log(err);
     else res.json(data);
   });
 });
@@ -255,7 +83,7 @@ app.put('/users',function(req,res){
 app.get('/users/:id',function(req,res){
   var params = {Key:{id:{S:req.params.id}},TableName:'users'};
   dynamodb.getItem(params,function(err,data){
-    if(err)res.json(err);
+    if(err)console.log(err);
     else res.json(data);
   });
 });
@@ -263,7 +91,7 @@ app.get('/users/:id',function(req,res){
 app.get('/users',function(req,res){
   var params = {TableName:'users',AttributesToGet:['id']};
   dynamodb.scan(params,function(err,data){
-    if(err)res.json(err);
+    if(err)console.log(err);
     else res.json(data);
   });
 });
@@ -272,7 +100,7 @@ app.post('/users/:id',function(req,res){
   var params = {Key:{id:{S:req.params.id}},TableName:'users',AttributeUpdates:req.body};
   console.log(params);
   dynamodb.updateItem(params,function(err,data){
-    if(err)res.json(err);
+    if(err)console.log(err);
     else res.json(data);
   });
 });
@@ -280,49 +108,72 @@ app.post('/users/:id',function(req,res){
 app.delete('/users/:id',function(req,res){
   var params = {Key:{id:{S:req.params.id}},TableName:'users'};
   dynamodb.deleteItem(params,function(err,data){
-    if(err)res.json(err);
+    if(err)console.log(err);
     else res.json(data);
   });
 });
 
-app.put('/items',function(req,res){
-  var params = {Item:req.body,TableName:'items'};
+app.put('/items/:gender/',function(req,res){
+  var tableName = 'items_'+req.params.gender
+  console.log(tableName);
+  var params = {Item:req.body,TableName:'items_'+req.params.gender};
   dynamodb.putItem(params,function(err,data){
-    if(err)res.json(err);
+    if(err)console.log(err);
     else res.json(data);
   });
 });
 
-app.get('/items/:id',function(req,res){
-  var params = {Key:{id:{S:req.params.id}},TableName:'items'};
-  console.log(params);
+app.get('/items/:gender/:id',function(req,res){
+  var params = {Key:{id:{S:req.params.id}},TableName:'items_'+req.params.gender};
   dynamodb.getItem(params,function(err,data){
-    if(err)res.json(err);
+    if(err)console.log(err);
     else res.json(data);
   });
 });
 
-app.get('/items',function(req,res){
-  var params = {TableName:'items',AttributesToGet:['id']};
-  dynamodb.scan(params,function(err,data){
-    if(err)res.json(err);
-    else res.json(data);
-  });
+app.get('/items/:gender/',function(req,res){
+  var result = {Count:0,Items:[],ScannedCount:0};
+  var params = {
+    TableName:'items_'+req.params.gender, 
+    AttributesToGet:['id'],
+  };
+  async.doWhilst(
+    function (callback) {
+      dynamodb.scan(params, function(err, data) {
+        if (err){
+          console.log(err, err.stack);
+          callback(err);
+        }else{
+          result.Count += data.Count;
+          result.Items.push.apply(result.Items, data.Items);
+          result.ScannedCount += data.ScannedCount;
+          params.ExclusiveStartKey = data.LastEvaluatedKey;
+          callback();
+        }
+      });
+    },
+    function () {
+      return params.ExclusiveStartKey;
+    },
+    function (err) {
+        res.json(result);
+    }
+  );
 });
 
-app.post('/items/:id',function(req,res){
-  var params = {Key:{id:{S:req.params.id}},TableName:'items',AttributeUpdates:req.body};
+app.post('/items/:gender/:id',function(req,res){
+  var params = {Key:{id:{S:req.params.id}},TableName:'items_'+req.params.gender,AttributeUpdates:req.body};
   console.log(params);
   dynamodb.updateItem(params,function(err,data){
-    if(err)res.json(err);
+    if(err)console.log(err);
     else res.json(data);
   });
 });
 
-app.delete('/items/:id',function(req,res){
-  var params = {Key:{id:{S:req.params.id}},TableName:'items'};
+app.delete('/items/:gender/:id',function(req,res){
+  var params = {Key:{id:{S:req.params.id}},TableName:'items_'+req.params.gender};
   dynamodb.deleteItem(params,function(err,data){
-    if(err)res.json(err);
+    if(err)console.log(err);
     else res.json(data);
   });
 });
@@ -330,7 +181,7 @@ app.delete('/items/:id',function(req,res){
 app.put('/lists',function(req,res){
   var params = {Item:req.body,TableName:'lists'};
   dynamodb.putItem(params,function(err,data){
-    if(err)res.json(err);
+    if(err)console.log(err);
     else res.json(data);
   });
 });
@@ -338,7 +189,7 @@ app.put('/lists',function(req,res){
 app.get('/lists/:id',function(req,res){
   var params = {Key:{id:{S:req.params.id}},TableName:'lists'};
   dynamodb.getItem(params,function(err,data){
-    if(err)res.json(err);
+    if(err)console.log(err);
     else res.json(data);
   });
 });
@@ -346,7 +197,7 @@ app.get('/lists/:id',function(req,res){
 app.get('/lists',function(req,res){
   var params = {TableName:'lists',AttributesToGet:['id']};
   dynamodb.scan(params,function(err,data){
-    if(err)res.json(err);
+    if(err)console.log(err);
     else res.json(data);
   });
 });
@@ -355,7 +206,7 @@ app.post('/lists/:id',function(req,res){
   var params = {Key:{id:{S:req.params.id}},TableName:'lists',AttributeUpdates:req.body};
   console.log(params);
   dynamodb.updateItem(params,function(err,data){
-    if(err)res.json(err);
+    if(err)console.log(err);
     else res.json(data);
   });
 });
@@ -363,7 +214,7 @@ app.post('/lists/:id',function(req,res){
 app.delete('/lists/:id',function(req,res){
   var params = {Key:{id:{S:req.params.id}},TableName:'lists'};
   dynamodb.deleteItem(params,function(err,data){
-    if(err)res.json(err);
+    if(err)console.log(err);
     else res.json(data);
   });
 });
