@@ -229,6 +229,57 @@ app.delete('/lists/users/:lid/:uid',function(req,res){
   });
 });
 
+app.put('/lists/items/',function(req,res){
+  var params = {Item:req.body,TableName:'lists.items'};
+  dynamodb.putItem(params,function(err,data){
+    if(err)console.log(err);
+    else res.json(data);
+  });
+});
+
+app.get('/lists/items/:lid/:iid',function(req,res){
+  var params = {Key:{lid:{S:req.params.lid},iid:{S:req.params.iid}},TableName:'lists.items'};
+  dynamodb.getItem(params,function(err,data){
+    if(err)console.log(err);
+    else res.json(data);
+  });
+});
+
+app.get('/lists/items/:lid',function(req,res){
+  var params = {
+    KeyConditions:{
+      lid:{
+        ComparisonOperator:'EQ'
+      , AttributeValueList:[
+          {S:req.params.lid}
+        ]
+      }
+    }
+  , AttributesToGet: ['iid']
+  , TableName:'lists.items'
+  };
+  dynamodb.query(params,function(err,data){
+    if(err)console.log(err);
+    else res.json(data);
+  });
+});
+
+app.get('/lists/items/',function(req,res){
+  var params = {TableName:'lists.items',AttributesToGet:['lid','iid']};
+  dynamodb.scan(params,function(err,data){
+    if(err)console.log(err);
+    else res.json(data);
+  });
+});
+
+app.delete('/lists/items/:lid/:iid',function(req,res){
+  var params = {Key:{lid:{S:req.params.lid},iid:{S:req.params.iid}},TableName:'lists.items'};
+  dynamodb.deleteItem(params,function(err,data){
+    if(err)console.log(err);
+    else res.json(data);
+  });
+});
+
 http.createServer(app).listen(app.get('port'), function(){
   console.log("Express server listening on port " + app.get('port'));
 });
