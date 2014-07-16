@@ -178,41 +178,51 @@ app.delete('/items/:gender/:id',function(req,res){
   });
 });
 
-app.put('/lists',function(req,res){
-  var params = {Item:req.body,TableName:'lists'};
+app.put('/lists/users/',function(req,res){
+  var params = {Item:req.body,TableName:'lists.users'};
   dynamodb.putItem(params,function(err,data){
     if(err)console.log(err);
     else res.json(data);
   });
 });
 
-app.get('/lists/:id',function(req,res){
-  var params = {Key:{id:{S:req.params.id}},TableName:'lists'};
+app.get('/lists/users/:lid/:uid',function(req,res){
+  var params = {Key:{lid:{S:req.params.lid},uid:{S:req.params.uid}},TableName:'lists.users'};
   dynamodb.getItem(params,function(err,data){
     if(err)console.log(err);
     else res.json(data);
   });
 });
 
-app.get('/lists',function(req,res){
-  var params = {TableName:'lists',AttributesToGet:['id']};
+app.get('/lists/users/:lid',function(req,res){
+  var params = {
+    KeyConditions:{
+      lid:{
+        ComparisonOperator:'EQ'
+      , AttributeValueList:[
+          {S:req.params.lid}
+        ]
+      }
+    }
+  , AttributesToGet: ['uid']
+  , TableName:'lists.users'
+  };
+  dynamodb.query(params,function(err,data){
+    if(err)console.log(err);
+    else res.json(data);
+  });
+});
+
+app.get('/lists/users/',function(req,res){
+  var params = {TableName:'lists.users',AttributesToGet:['lid','uid']};
   dynamodb.scan(params,function(err,data){
     if(err)console.log(err);
     else res.json(data);
   });
 });
 
-app.post('/lists/:id',function(req,res){
-  var params = {Key:{id:{S:req.params.id}},TableName:'lists',AttributeUpdates:req.body};
-  console.log(params);
-  dynamodb.updateItem(params,function(err,data){
-    if(err)console.log(err);
-    else res.json(data);
-  });
-});
-
-app.delete('/lists/:id',function(req,res){
-  var params = {Key:{id:{S:req.params.id}},TableName:'lists'};
+app.delete('/lists/users/:lid/:uid',function(req,res){
+  var params = {Key:{lid:{S:req.params.lid},uid:{S:req.params.uid}},TableName:'lists.users'};
   dynamodb.deleteItem(params,function(err,data){
     if(err)console.log(err);
     else res.json(data);
