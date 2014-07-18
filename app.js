@@ -163,7 +163,7 @@ app.get('/items/:gender(womens|mens)/',function(req,res){
       return params.ExclusiveStartKey;
     },
     function (err) {
-        res.json(result);
+      res.json(result);
     }
   );
 });
@@ -264,6 +264,7 @@ app.get('/lists.items/:lid/:iid',function(req,res){
 
 app.get('/lists.items/:lid',function(req,res){
   console.log(__line);
+  var result = {Count:0,Items:[],ScannedCount:0};
   var params = {
     KeyConditions:{
       lid:{
@@ -276,10 +277,29 @@ app.get('/lists.items/:lid',function(req,res){
   , AttributesToGet: ['iid']
   , TableName:'lists.items'
   };
-  dynamodb.query(params,function(err,data){
-    if(err)console.log(err);
-    else res.json(data);
-  });
+  async.doWhilst(
+    function (callback) {
+      dynamodb.query(params,function(err,data){
+        if (err){
+          console.log(err, err.stack);
+          callback(err);
+        }else{
+          result.Count += data.Count;
+          result.Items.push.apply(result.Items, data.Items);
+          result.ScannedCount += data.ScannedCount;
+          params.ExclusiveStartKey = data.LastEvaluatedKey;
+          callback();
+        }
+      });
+    },
+    function () {
+      return params.ExclusiveStartKey;
+    },
+    function (err) {
+      res.json(result);
+    }
+  );
+
 });
 
 app.get('/lists.items/',function(req,res){
