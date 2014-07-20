@@ -118,9 +118,9 @@ app.delete('/users/:id',function(req,res){
   });
 });
 
-app.put('/items/:gender(womens|mens)/',function(req,res){
+app.put('/items/',function(req,res){
   console.log(__line);
-  var params = {Item:req.body,TableName:'items_'+req.params.gender};
+  var params = {Item:req.body,TableName:'items'};
   params.Item.date = {S:(new Date()).toISOString()};
   dynamodb.putItem(params,function(err,data){
     if(err)console.log(err);
@@ -128,20 +128,20 @@ app.put('/items/:gender(womens|mens)/',function(req,res){
   });
 });
 
-app.get('/items/:gender(womens|mens)/:id',function(req,res){
+app.get('/items/:id',function(req,res){
   console.log(__line);
-  var params = {Key:{id:{S:req.params.id}},TableName:'items_'+req.params.gender};
+  var params = {Key:{id:{S:req.params.id}},TableName:'items'};
   dynamodb.getItem(params,function(err,data){
     if(err)console.log(err);
     else res.json(data);
   });
 });
 
-app.get('/items/:gender(womens|mens)/',function(req,res){
+app.get('/items/',function(req,res){
   console.log(__line);
   var result = {Count:0,Items:[],ScannedCount:0};
   var params = {
-    TableName:'items_'+req.params.gender, 
+    TableName:'items', 
     AttributesToGet:['id'],
   };
   async.doWhilst(
@@ -168,18 +168,18 @@ app.get('/items/:gender(womens|mens)/',function(req,res){
   );
 });
 
-app.post('/items/:gender(womens|mens)/:id',function(req,res){
+app.post('/items/:id',function(req,res){
   console.log(__line);
-  var params = {Key:{id:{S:req.params.id}},TableName:'items_'+req.params.gender,AttributeUpdates:req.body};
+  var params = {Key:{id:{S:req.params.id}},TableName:'items',AttributeUpdates:req.body};
   dynamodb.updateItem(params,function(err,data){
     if(err)console.log(err);
     else res.json(data);
   });
 });
 
-app.delete('/items/:gender(womens|mens)/:id',function(req,res){
+app.delete('/items/:id',function(req,res){
   console.log(__line);
-  var params = {Key:{id:{S:req.params.id}},TableName:'items_'+req.params.gender};
+  var params = {Key:{id:{S:req.params.id}},TableName:'items'};
   dynamodb.deleteItem(params,function(err,data){
     if(err)console.log(err);
     else res.json(data);
